@@ -13,6 +13,14 @@ var budgetController = (function(){
         this.description = description;
         this.value = value;
     };
+
+    var calculateTotal = function(type){
+        var sum = 0;
+        data.allItems[type].forEach(function(cur){
+            sum += cur.value;
+            data.totals[type] = sum;
+        })
+    }
     
  
     var data = {
@@ -25,7 +33,9 @@ var budgetController = (function(){
         totals: {
             exp: 0,
             inc: 0
-        }
+        }, 
+        budget: 0,
+        percentage: -1
 
     };
 
@@ -48,6 +58,26 @@ var budgetController = (function(){
                  return newItem;
             },
 
+            calculateBudget: function(){
+                calculateTotal('exp');
+                calculateTotal('inc');
+                data.budget = data.totals.inc - data.totals.exp;
+
+                if( data.totals.inc > 0 )
+                data.percentage = Math.round((data.totals.exp/data.totals.inc)*100);
+                else 
+                data.percentage = -1;
+            },
+
+            getBudget: function(){
+                return {
+                    budget: data.budget,
+                    totalexp: data.totals.exp,
+                    totalinc: data.totals.inc,
+                    percentage: data.percentage
+                }
+            },
+
             display: function(){
                 console.log(data);
             }
@@ -64,7 +94,11 @@ var UIController = (function(){
         inputValue: '.add__value',
         addButton: '.add__btn',
         incomeContainer: '.income__list',
-        expensesContainer: '.expenses__list'
+        expensesContainer: '.expenses__list',
+        budgetLabel: '.budget__value',
+        incomeBudget: '.budget__income--value',
+        expensesBudget: '.budget__expenses--value',
+        percentageLabel: '.budget__expenses--percentage'
     };
 
     return{
@@ -72,7 +106,7 @@ var UIController = (function(){
             return{
                 type: document.querySelector(DOMStrings.inputType).value, //inc exp
                 description: document.querySelector(DOMStrings.inputDescription).value,
-                value: document.querySelector(DOMStrings.inputValue).value
+                value: parseFloat(document.querySelector(DOMStrings.inputValue).value)
             };
         },
 
@@ -106,6 +140,18 @@ var UIController = (function(){
             fArray[0].focus();
         },
 
+        displayBudget: function(obj){
+            document.querySelector(DOMStrings.budgetLabel).textContent = obj.budget;
+            document.querySelector(DOMStrings.incomeBudget).textContent = obj.totalinc;
+            document.querySelector(DOMStrings.expensesBudget).textContent = obj.totalexp;
+            
+            if(obj.percentage > 0)
+            document.querySelector(DOMStrings.percentageLabel).textContent = obj.percentage + "%";
+            else
+            document.querySelector(DOMStrings.percentageLabel).textContent = "__";
+
+        },
+
         getDomStrings: function(){
             return DOMStrings;
         }
@@ -131,18 +177,33 @@ var controller = (function(budgetCtrl, UICtrl){
     var DOM = UICtrl.getDomStrings();
     console.log(DOM.addButton);
 
+    var updateBudget = function(){
+        budgetCtrl.calculateBudget();
+        var budg = budgetCtrl.getBudget(); 
+        UICtrl.displayBudget(budg);
+    }
+
     var ctrlAddItem = function(){
         var input = UICtrl.getInput();
-        var newItem = budgetController.addItem(input.type,input.description,input.value);
-        UIController.addListItem(newItem, input.type);
-        UIController.clearFields();
 
+        if(input.description !== "" && !isNaN(input.value) && input.value > 0){
+            var newItem = budgetCtrl.addItem(input.type,input.description,input.value);
+            UIController.addListItem(newItem, input.type);
+            UIController.clearFields();
+            updateBudget();
+        }     
     };
 
 
     return {
         init: function(){
             console.log('hi');
+            UICtrl.displayBudget({
+                budget: 0,
+                percentage: 0,
+                totalexp: 0,
+                totalinc: 0
+            });
             setupEventListeners();
         }
     }
