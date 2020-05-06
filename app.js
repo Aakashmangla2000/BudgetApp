@@ -18,8 +18,8 @@ var budgetController = (function(){
         var sum = 0;
         data.allItems[type].forEach(function(cur){
             sum += cur.value;
-            data.totals[type] = sum;
-        })
+        });
+        data.totals[type] = sum;
     }
     
  
@@ -61,6 +61,7 @@ var budgetController = (function(){
             calculateBudget: function(){
                 calculateTotal('exp');
                 calculateTotal('inc');
+
                 data.budget = data.totals.inc - data.totals.exp;
 
                 if( data.totals.inc > 0 )
@@ -166,6 +167,12 @@ var UIController = (function(){
 
         },
 
+        deleteListItem: function(selectorID){
+            var el = document.getElementById(selectorID)
+            el.parentNode.removeChild(el);
+
+        },
+
         getDomStrings: function(){
             return DOMStrings;
         }
@@ -221,6 +228,8 @@ var controller = (function(budgetCtrl, UICtrl){
             type = splitId[0];
             id = parseInt(splitId[1]);
             budgetCtrl.deleteItem(type,id);
+            UICtrl.deleteListItem(itemId);
+            updateBudget();
         }
 
 
